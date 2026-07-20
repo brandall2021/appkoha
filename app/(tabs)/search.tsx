@@ -1,0 +1,6 @@
+import React from "react";
+import SearchScreen from "../../src/screens/search/SearchScreen";
+
+export default function SearchTab() {
+  return <SearchScreen />;
+}

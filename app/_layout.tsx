@@ -1,0 +1,66 @@
+import React, { useEffect } from "react";
+import { Stack } from "expo-router";
+import { PaperProvider } from "react-native-paper";
+import { StatusBar } from "expo-status-bar";
+import { useAppStore, loadPersistedState } from "../src/stores/appStore";
+import { lightTheme, darkTheme } from "../src/theme";
+
+export default function RootLayout() {
+  const { isDarkMode } = useAppStore();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+
+  useEffect(() => {
+    loadPersistedState();
+  }, []);
+
+  return (
+    <PaperProvider theme={theme}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.colors.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="login"
+          options={{
+            headerShown: true,
+            title: "Iniciar sesion",
+            presentation: "modal",
+          }}
+        />
+        <Stack.Screen
+          name="book/[id]"
+          options={{
+            headerShown: true,
+            title: "Detalle del libro",
+          }}
+        />
+        <Stack.Screen
+          name="scanner"
+          options={{
+            headerShown: true,
+            title: "Escanear",
+            presentation: "fullScreenModal",
+          }}
+        />
+        <Stack.Screen
+          name="ai"
+          options={{
+            headerShown: true,
+            title: "Asistente IA",
+          }}
+        />
+        <Stack.Screen
+          name="search"
+          options={{
+            headerShown: true,
+            title: "Buscar",
+          }}
+        />
+      </Stack>
+    </PaperProvider>
+  );
+}
