@@ -1,7 +1,8 @@
 import React from "react";
-import { View, StyleSheet, ScrollView, Dimensions } from "react-native";
-import { Text, Card, useTheme, TouchableRipple } from "react-native-paper";
+import { View, StyleSheet, ScrollView, Dimensions, Pressable } from "react-native";
+import { Text, useTheme } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { shadows, borderRadius } from "../theme";
 
 const { width } = Dimensions.get("window");
 
@@ -20,22 +21,41 @@ export default function HorizontalCarousel({ title, items, onItemPress, renderIt
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text variant="titleMedium" style={styles.title}>{title}</Text>
-        <Text variant="bodySmall" style={{ color: theme.colors.primary }}>
-          Ver todo
-        </Text>
+        <View style={styles.headerLeft}>
+          <Text variant="titleMedium" style={[styles.title, { color: theme.colors.onBackground }]}>
+            {title}
+          </Text>
+          <View style={[styles.count, { backgroundColor: `${theme.colors.primary}12` }]}>
+            <Text variant="bodySmall" style={{ color: theme.colors.primary, fontWeight: "600" }}>
+              {items.length}
+            </Text>
+          </View>
+        </View>
+        <Pressable style={({ pressed }) => styles.viewAllBtn}>
+          <Text variant="bodySmall" style={{ color: theme.colors.primary, fontWeight: "600" }}>
+            Ver todo
+          </Text>
+          <MaterialCommunityIcons name="arrow-right" size={14} color={theme.colors.primary} />
+        </Pressable>
       </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
+        snapToInterval={width * 0.35 + 20}
+        decelerationRate="fast"
       >
         {items.map((item, index) => (
-          <TouchableRipple
+          <Pressable
             key={item.biblio_id || index}
             onPress={() => onItemPress(item)}
-            style={[styles.item, { backgroundColor: theme.colors.surface }]}
-            borderless
+            style={({ pressed }) => [
+              styles.item,
+              { backgroundColor: theme.colors.surface },
+              shadows.sm,
+              pressed && { transform: [{ scale: 0.96 }], opacity: 0.85 },
+            ]}
           >
             {renderItem ? (
               renderItem(item)
@@ -51,15 +71,19 @@ export default function HorizontalCarousel({ title, items, onItemPress, renderIt
                     {(item.title || "?")[0].toUpperCase()}
                   </Text>
                 </View>
-                <Text variant="bodySmall" numberOfLines={2} style={styles.itemTitle}>
+                <Text
+                  variant="bodySmall"
+                  numberOfLines={2}
+                  style={[styles.itemTitle, { color: theme.colors.onSurface }]}
+                >
                   {item.title || "Sin titulo"}
                 </Text>
-                <Text variant="bodySmall" numberOfLines={1} style={{ color: theme.colors.outline }}>
+                <Text variant="bodySmall" numberOfLines={1} style={{ color: theme.colors.outline, marginTop: 2 }}>
                   {item.author || ""}
                 </Text>
               </View>
             )}
-          </TouchableRipple>
+          </Pressable>
         ))}
       </ScrollView>
     </View>
@@ -68,45 +92,61 @@ export default function HorizontalCarousel({ title, items, onItemPress, renderIt
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    marginBottom: 14,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   title: {
     fontWeight: "700",
   },
+  count: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: borderRadius.pill,
+  },
+  viewAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
   scroll: {
     paddingHorizontal: 12,
+    paddingRight: 20,
   },
   item: {
     width: width * 0.35,
-    marginHorizontal: 4,
-    borderRadius: 12,
+    marginHorizontal: 8,
+    borderRadius: borderRadius.lg,
     overflow: "hidden",
   },
   defaultItem: {
-    padding: 8,
+    padding: 10,
     alignItems: "center",
   },
   cover: {
     width: "100%",
     height: 120,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   letter: {
     fontSize: 28,
     fontWeight: "bold",
   },
   itemTitle: {
-    fontWeight: "500",
+    fontWeight: "600",
     textAlign: "center",
   },
 });

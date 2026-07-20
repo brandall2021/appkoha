@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, FlatList, ActivityIndicator } from "react-native";
-import { Searchbar, Text, useTheme, SegmentedButtons } from "react-native-paper";
+import { View, StyleSheet, FlatList, Pressable } from "react-native";
+import { Searchbar, Text, useTheme } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { getKohaAPI } from "../../api/koha";
 import { Biblio } from "../../types";
-import BookCard from "../../components/BookCard";
+import { BookCardSkeleton } from "../../components/Skeleton";
+import BookCardComponent from "../../components/BookCard";
 import EmptyState from "../../components/EmptyState";
 import FilterBar, { FilterOption } from "../../components/FilterBar";
 import { useAppStore } from "../../stores/appStore";
+import { shadows, borderRadius } from "../../theme";
 
 const materialFilters: FilterOption[] = [
   { label: "Todos", value: "all", icon: "book" },
@@ -79,18 +83,38 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Search Header */}
       <View style={styles.searchSection}>
-        <Searchbar
-          placeholder="Buscar por titulo, autor, ISBN..."
-          onChangeText={setSearchQuery}
-          onSubmitEditing={handleSearch}
-          value={searchQuery}
-          style={[styles.searchBar, { backgroundColor: theme.colors.surface }]}
-          inputStyle={{ fontSize: 15 }}
-          elevation={1}
-        />
+        <View style={styles.searchRow}>
+          <View style={[styles.searchBarContainer, shadows.sm]}>
+            <Searchbar
+              placeholder="Buscar por titulo, autor, ISBN..."
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+              value={searchQuery}
+              style={[styles.searchBar, { backgroundColor: theme.colors.surface }]}
+              inputStyle={{ fontSize: 15, color: theme.colors.onSurface }}
+              elevation={0}
+            />
+          </View>
+          <Pressable
+            onPress={() => setViewMode(viewMode === "list" ? "grid" : "list")}
+            style={({ pressed }) => [
+              styles.viewToggle,
+              { backgroundColor: theme.colors.surfaceVariant },
+              pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name={viewMode === "list" ? "view-grid" : "view-list"}
+              size={20}
+              color={theme.colors.onSurface}
+            />
+          </Pressable>
+        </View>
       </View>
 
+      {/* Filters */}
       <FilterBar
         filters={materialFilters}
         selected={selectedMaterial}
@@ -107,8 +131,13 @@ export default function SearchScreen() {
         multi
       />
 
+      {/* Results */}
       {loading && results.length === 0 ? (
-        <EmptyState title="Buscando..." loading />
+        <View style={styles.skeletonContainer}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <BookCardSkeleton key={i} viewMode={viewMode} />
+          ))}
+        </View>
       ) : results.length === 0 && searchQuery ? (
         <EmptyState
           icon="book-search"
@@ -125,23 +154,37 @@ export default function SearchScreen() {
         <FlatList
           data={results}
           keyExtractor={(item) => String(item.biblio_id)}
-          renderItem={({ item }) => (
-            <BookCard
-              biblio={item}
-              onPress={() => router.push(`/book/${item.biblio_id}`)}
-              viewMode={viewMode}
-            />
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
+              <BookCardComponent
+                biblio={item}
+                onPress={() => router.push(`/book/${item.biblio_id}`)}
+                viewMode={viewMode}
+              />
+            </Animated.View>
           )}
           contentContainerStyle={styles.list}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             loading ? (
-              <ActivityIndicator style={{ padding: 16 }} color={theme.colors.primary} />
+              <View style={styles.footerLoader}>
+                <MaterialCommunityIcons name="loading" size={24} color={theme.colors.primary} />
+              </View>
             ) : null
           }
           ListEmptyComponent={null}
         />
+      )}
+
+      {/* Results Count */}
+      {results.length > 0 && (
+        <View style={[styles.resultCount, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <MaterialCommunityIcons name="magnify" size={14} color={theme.colors.outline} />
+          <Text variant="bodySmall" style={{ color: theme.colors.outline, marginLeft: 4 }}>
+            {results.length} resultado(s) encontrado(s)
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -152,14 +195,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  searchBarContainer: {
+    flex: 1,
+    borderRadius: borderRadius.xl,
   },
   searchBar: {
-    borderRadius: 16,
+    borderRadius: borderRadius.xl,
+    height: 50,
+  },
+  viewToggle: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.lg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  skeletonContainer: {
+    paddingVertical: 8,
   },
   list: {
     paddingVertical: 8,
+  },
+  footerLoader: {
+    padding: 16,
+    alignItems: "center",
+  },
+  resultCount: {
+    position: "absolute",
+    bottom: 16,
+    left: 20,
+    right: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: borderRadius.pill,
   },
 });

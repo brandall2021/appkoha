@@ -1,10 +1,23 @@
-import React, { useState, useCallback } from "react";
-import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
-import { Searchbar, Text, useTheme, Card, Surface } from "react-native-paper";
+import React, { useState, useCallback, useRef } from "react";
+import { View, StyleSheet, ScrollView, RefreshControl, Pressable } from "react-native";
+import { Searchbar, Text, useTheme, Surface } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolate,
+  Extrapolation,
+} from "react-native-reanimated";
 import { useAppStore } from "../../stores/appStore";
 import HorizontalCarousel from "../../components/HorizontalCarousel";
+import { HomeScreenSkeleton } from "../../components/Skeleton";
+import { motion, borderRadius, shadows } from "../../theme";
+
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -12,10 +25,18 @@ export default function HomeScreen() {
   const { patron, searchHistory, isDarkMode } = useAppStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const scrollY = useSharedValue(0);
+  const headerScale = useSharedValue(1);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
+  }, []);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSearch = () => {
@@ -26,20 +47,42 @@ export default function HomeScreen() {
   };
 
   const features = [
-    { icon: "barcode-scan", label: "Escanear ISBN", route: "/scanner" },
-    { icon: "qrcode-scan", label: "Escanear QR", route: "/scanner" },
-    { icon: "microphone", label: "Busqueda por voz", route: "/search" },
-    { icon: "robot", label: "Asistente IA", route: "/ai" },
+    { icon: "barcode-scan", label: "Escanear ISBN", route: "/scanner", color: "#2E7D32" },
+    { icon: "qrcode-scan", label: "Escanear QR", route: "/scanner", color: "#00897B" },
+    { icon: "microphone", label: "Busqueda por voz", route: "/search", color: "#E65100" },
+    { icon: "robot", label: "Asistente IA", route: "/ai", color: "#7B1FA2" },
   ];
 
   const recentSearches = searchHistory.slice(0, 5);
 
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: headerScale.value }],
+  }));
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <HomeScreenSkeleton />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView
+    <AnimatedScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      onScroll={scrollHandler}
+      scrollEventThrottle={16}
+      showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
+      {/* Header */}
+      <Animated.View style={[styles.header, headerAnimatedStyle]}>
         <View style={styles.logoContainer}>
           <View style={[styles.logo, { backgroundColor: theme.colors.primaryContainer }]}>
             <MaterialCommunityIcons name="book-open-variant" size={28} color={theme.colors.primary} />
@@ -54,88 +97,130 @@ export default function HomeScreen() {
           </View>
         </View>
         {patron && (
-          <Surface style={[styles.greeting, { backgroundColor: theme.colors.surfaceVariant }]} elevation={0}>
-            <Text variant="bodySmall" style={{ color: theme.colors.outline }}>
-              Hola,
-            </Text>
-            <Text variant="bodyMedium" style={{ fontWeight: "600" }}>
-              {patron.firstname || patron.surname}
-            </Text>
-          </Surface>
+          <Pressable onPress={() => router.push("/profile")}>
+            <Surface style={[styles.greeting, { backgroundColor: theme.colors.surfaceVariant }]} elevation={0}>
+              <Text variant="bodySmall" style={{ color: theme.colors.outline }}>
+                Hola,
+              </Text>
+              <Text variant="bodyMedium" style={{ fontWeight: "600", color: theme.colors.onSurface }}>
+                {patron.firstname || patron.surname}
+              </Text>
+            </Surface>
+          </Pressable>
         )}
-      </View>
+      </Animated.View>
 
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Searchbar
           placeholder="Buscar libros, autores, ISBN..."
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
           value={searchQuery}
-          style={[styles.searchBar, { backgroundColor: theme.colors.surface }]}
-          inputStyle={{ fontSize: 15 }}
-          elevation={1}
+          style={[styles.searchBar, { backgroundColor: theme.colors.surface }, shadows.sm]}
+          inputStyle={{ fontSize: 15, color: theme.colors.onSurface }}
+          elevation={0}
+          trailingIcon={() => (
+            <MaterialCommunityIcons
+              name="microphone"
+              size={20}
+              color={theme.colors.outline}
+              style={{ marginRight: 8 }}
+            />
+          )}
         />
       </View>
 
-      <View style={styles.quickActions}>
-        {features.map((feat, i) => (
-          <Card
-            key={i}
-            style={[styles.featureCard, { backgroundColor: theme.colors.surface }]}
-            onPress={() => router.push(feat.route as any)}
-          >
-            <Card.Content style={styles.featureContent}>
-              <View style={[styles.featureIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                <MaterialCommunityIcons name={feat.icon as any} size={22} color={theme.colors.primary} />
+      {/* Quick Actions - 2x2 Grid */}
+      <View style={styles.quickActionsContainer}>
+        <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
+          Accesos rapidos
+        </Text>
+        <View style={styles.quickActionsGrid}>
+          {features.map((feat, i) => (
+            <Pressable
+              key={i}
+              onPress={() => router.push(feat.route as any)}
+              style={({ pressed }) => [
+                styles.featureCard,
+                { backgroundColor: theme.colors.surface },
+                shadows.sm,
+                pressed && { transform: [{ scale: 0.96 }], opacity: 0.85 },
+              ]}
+            >
+              <View style={[styles.featureIcon, { backgroundColor: `${feat.color}15` }]}>
+                <MaterialCommunityIcons name={feat.icon as any} size={24} color={feat.color} />
               </View>
-              <Text variant="bodySmall" style={styles.featureLabel} numberOfLines={2}>
+              <Text variant="bodySmall" style={[styles.featureLabel, { color: theme.colors.onSurface }]} numberOfLines={2}>
                 {feat.label}
               </Text>
-            </Card.Content>
-          </Card>
-        ))}
+            </Pressable>
+          ))}
+        </View>
       </View>
 
+      {/* Recent Searches */}
       {recentSearches.length > 0 && (
         <View style={styles.section}>
-          <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
-            Busquedas recientes
-          </Text>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="history" size={18} color={theme.colors.outline} />
+            <Text variant="titleMedium" style={[styles.sectionTitleText, { color: theme.colors.onBackground }]}>
+              Busquedas recientes
+            </Text>
+          </View>
           {recentSearches.map((q, i) => (
-            <Card
+            <Pressable
               key={i}
-              style={[styles.historyCard, { backgroundColor: theme.colors.surface }]}
               onPress={() => router.push(`/search?query=${encodeURIComponent(q)}`)}
+              style={({ pressed }) => [
+                styles.historyCard,
+                { backgroundColor: theme.colors.surfaceVariant },
+                pressed && { opacity: 0.7 },
+              ]}
             >
-              <Card.Content style={styles.historyContent}>
-                <MaterialCommunityIcons name="history" size={18} color={theme.colors.outline} />
-                <Text variant="bodyMedium" style={{ marginLeft: 12 }}>
-                  {q}
-                </Text>
-              </Card.Content>
-            </Card>
+              <MaterialCommunityIcons name="history" size={16} color={theme.colors.outline} />
+              <Text variant="bodyMedium" style={[styles.historyText, { color: theme.colors.onSurface }]}>
+                {q}
+              </Text>
+              <MaterialCommunityIcons name="arrow-top-right" size={14} color={theme.colors.outline} />
+            </Pressable>
           ))}
         </View>
       )}
 
+      {/* Banner */}
       <View style={styles.bannerSection}>
-        <Card style={[styles.banner, { backgroundColor: theme.colors.primaryContainer }]} onPress={() => router.push("/search")}>
-          <Card.Content style={styles.bannerContent}>
-            <MaterialCommunityIcons name="library" size={40} color={theme.colors.primary} />
+        <Pressable
+          onPress={() => router.push("/search")}
+          style={({ pressed }) => [
+            styles.banner,
+            {
+              backgroundColor: isDarkMode ? theme.colors.primaryContainer : theme.colors.primary,
+            },
+            shadows.lg,
+            pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 },
+          ]}
+        >
+          <View style={styles.bannerContent}>
+            <View style={styles.bannerIconContainer}>
+              <MaterialCommunityIcons name="library" size={36} color="#FFFFFF" />
+            </View>
             <View style={styles.bannerText}>
-              <Text variant="titleMedium" style={{ color: theme.colors.primary, fontWeight: "700" }}>
+              <Text variant="titleMedium" style={styles.bannerTitle}>
                 Explora el catalogo
               </Text>
-              <Text variant="bodySmall" style={{ color: theme.colors.primary }}>
-                Miles de libros disponibles
+              <Text variant="bodySmall" style={styles.bannerSubtitle}>
+                Miles de libros disponibles para ti
               </Text>
             </View>
-          </Card.Content>
-        </Card>
+            <MaterialCommunityIcons name="arrow-right" size={24} color="rgba(255,255,255,0.8)" />
+          </View>
+        </Pressable>
       </View>
 
+      {/* Bottom Spacing */}
       <View style={styles.bottomPadding} />
-    </ScrollView>
+    </AnimatedScrollView>
   );
 }
 
@@ -147,8 +232,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 8,
   },
   logoContainer: {
@@ -157,85 +242,126 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.lg,
     justifyContent: "center",
     alignItems: "center",
   },
   appName: {
     fontWeight: "800",
     letterSpacing: -0.5,
+    fontSize: 22,
   },
   greeting: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: borderRadius.pill,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   searchBar: {
-    borderRadius: 16,
+    borderRadius: borderRadius.xl,
+    height: 52,
   },
-  quickActions: {
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  featureCard: {
-    flex: 1,
-    borderRadius: 12,
-  },
-  featureContent: {
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  featureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  featureLabel: {
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  section: {
-    marginTop: 20,
-    paddingHorizontal: 16,
+  quickActionsContainer: {
+    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontWeight: "700",
-    marginBottom: 10,
+    marginBottom: 12,
+    fontSize: 16,
   },
-  historyCard: {
-    marginBottom: 4,
-    borderRadius: 10,
-  },
-  historyContent: {
+  quickActionsGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  featureCard: {
+    width: "47%",
+    borderRadius: borderRadius.lg,
+    padding: 16,
     alignItems: "center",
   },
-  bannerSection: {
+  featureIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.lg,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  featureLabel: {
+    textAlign: "center",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  section: {
+    marginTop: 28,
+    paddingHorizontal: 20,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionTitleText: {
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  historyCard: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
-    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: borderRadius.md,
+    marginBottom: 6,
+    gap: 12,
+  },
+  historyText: {
+    flex: 1,
+    fontWeight: "500",
+  },
+  bannerSection: {
+    paddingHorizontal: 20,
+    marginTop: 28,
   },
   banner: {
-    borderRadius: 16,
+    borderRadius: borderRadius.xl,
+    padding: 20,
   },
   bannerContent: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
   },
+  bannerIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.lg,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   bannerText: {
     flex: 1,
   },
+  bannerTitle: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 17,
+  },
+  bannerSubtitle: {
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
+  },
   bottomPadding: {
-    height: 32,
+    height: 40,
   },
 });

@@ -1,7 +1,8 @@
 import React from "react";
-import { View, StyleSheet, FlatList } from "react-native";
-import { Text, Chip, useTheme, Button } from "react-native-paper";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { Text, useTheme } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { borderRadius } from "../theme";
 
 export interface FilterOption {
   label: string;
@@ -21,36 +22,55 @@ export default function FilterBar({ filters, selected, onSelect, multi = false }
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <ScrollView
         horizontal
-        data={filters}
-        keyExtractor={(item) => item.value}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
+      >
+        {filters.map((item) => {
           const isSelected = multi
             ? selected.includes(item.value)
             : selected[0] === item.value;
 
           return (
-            <Chip
-              selected={isSelected}
+            <Pressable
+              key={item.value}
               onPress={() => onSelect(item.value)}
-              mode={isSelected ? "flat" : "outlined"}
-              style={[
+              style={({ pressed }) => [
                 styles.chip,
-                isSelected && { backgroundColor: theme.colors.primaryContainer },
+                {
+                  backgroundColor: isSelected
+                    ? theme.colors.primaryContainer
+                    : "transparent",
+                  borderColor: isSelected
+                    ? theme.colors.primary
+                    : theme.colors.outlineVariant,
+                  borderWidth: isSelected ? 0 : 1,
+                },
+                pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] },
               ]}
-              textStyle={
-                isSelected ? { color: theme.colors.primary } : { color: theme.colors.onSurface }
-              }
-              icon={item.icon as any}
             >
-              {item.label}
-            </Chip>
+              {item.icon && (
+                <MaterialCommunityIcons
+                  name={item.icon as any}
+                  size={16}
+                  color={isSelected ? theme.colors.primary : theme.colors.outline}
+                  style={{ marginRight: 6 }}
+                />
+              )}
+              <Text
+                style={{
+                  color: isSelected ? theme.colors.primary : theme.colors.onSurface,
+                  fontWeight: isSelected ? "700" : "500",
+                  fontSize: 13,
+                }}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
           );
-        }}
-      />
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -60,10 +80,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   list: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     gap: 8,
   },
   chip: {
-    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: borderRadius.pill,
   },
 });
