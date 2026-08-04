@@ -55,7 +55,7 @@ export default function ScannerScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <CameraView
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: ["ean13", "ean8", "qr"],

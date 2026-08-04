@@ -120,7 +120,7 @@ export default function HomeScreen() {
           style={[styles.searchBar, { backgroundColor: theme.colors.surface }, shadows.sm]}
           inputStyle={{ fontSize: 15, color: theme.colors.onSurface }}
           elevation={0}
-          trailingIcon={() => (
+          traileringIcon={() => (
             <MaterialCommunityIcons
               name="microphone"
               size={20}

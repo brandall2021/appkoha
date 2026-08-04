@@ -1,4 +1,5 @@
 import Animated, {
+  type SharedValue,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -87,7 +88,7 @@ export function useShimmer(width: number) {
   }));
 }
 
-export function useParallax(scrollY: Animated.SharedValue<number>, speed = 0.5) {
+export function useParallax(scrollY: SharedValue<number>, speed = 0.5) {
   return useAnimatedStyle(() => ({
     transform: [{ translateY: scrollY.value * speed }],
   }));
@@ -106,10 +107,10 @@ export function AnimatedPressable({
 }) {
   const { animatedStyle, onPressIn, onPressOut } = usePressAnimation();
 
-  return (
-    <Pressable onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} hitSlop={hitSlop}>
-      <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
-    </Pressable>
+  return React.createElement(
+    Pressable,
+    { onPress, onPressIn, onPressOut, hitSlop },
+    React.createElement(Animated.View, { style: [style, animatedStyle] }, children)
   );
 }
 

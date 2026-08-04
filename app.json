@@ -35,6 +35,16 @@
         {
           "cameraPermission": "Necesitamos acceso a la camara para escanear codigos ISBN y QR."
         }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Necesitamos acceso al microfono para buscar libros por voz.",
+          "speechRecognitionPermission": "Necesitamos acceso al reconocimiento de voz para buscar libros por voz.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
       ]
     ]
   }

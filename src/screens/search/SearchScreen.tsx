@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, FlatList, Pressable } from "react-native";
-import { Searchbar, Text, useTheme } from "react-native-paper";
+import { View, StyleSheet, FlatList, Pressable, Modal } from "react-native";
+import { Searchbar, Text, useTheme, Button, Surface } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { getKohaAPI } from "../../api/koha";
 import { Biblio } from "../../types";
 import { BookCardSkeleton } from "../../components/Skeleton";
@@ -11,6 +19,7 @@ import BookCardComponent from "../../components/BookCard";
 import EmptyState from "../../components/EmptyState";
 import FilterBar, { FilterOption } from "../../components/FilterBar";
 import { useAppStore } from "../../stores/appStore";
+import { useVoiceSearch } from "../../hooks/useVoiceSearch";
 import { shadows, borderRadius } from "../../theme";
 
 const materialFilters: FilterOption[] = [
@@ -34,6 +43,7 @@ export default function SearchScreen() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   const doSearch = useCallback(
     async (q: string, pageNum: number = 1) => {
@@ -56,6 +66,65 @@ export default function SearchScreen() {
     },
     []
   );
+
+  const handleVoiceResult = useCallback(
+    (text: string) => {
+      const query = text.trim();
+      if (!query) return;
+      setVoiceOpen(false);
+      setSearchQuery(query);
+      addSearchHistory(query);
+      setPage(1);
+      doSearch(query, 1);
+    },
+    [addSearchHistory, doSearch]
+  );
+
+  const {
+    listening,
+    transcript,
+    error: voiceError,
+    supported: voiceSupported,
+    start: startVoice,
+    stop: stopVoice,
+    abort: abortVoice,
+    reset: resetVoice,
+  } = useVoiceSearch({ onResult: handleVoiceResult });
+
+  const micScale = useSharedValue(1);
+  const micAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: micScale.value }],
+  }));
+
+  useEffect(() => {
+    if (listening) {
+      micScale.value = withRepeat(
+        withSequence(
+          withTiming(1.14, { duration: 520, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 520, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      micScale.value = withTiming(1, { duration: 180 });
+    }
+  }, [listening, micScale]);
+
+  const handleStartVoice = async () => {
+    resetVoice();
+    setVoiceOpen(true);
+    if (!voiceSupported) return;
+    await startVoice();
+  };
+
+  const handleCloseVoice = () => {
+    if (listening) {
+      abortVoice();
+    }
+    resetVoice();
+    setVoiceOpen(false);
+  };
 
   useEffect(() => {
     if (params.query) {
@@ -97,6 +166,17 @@ export default function SearchScreen() {
               elevation={0}
             />
           </View>
+          <Pressable
+            onPress={handleStartVoice}
+            accessibilityLabel="Buscar por voz"
+            style={({ pressed }) => [
+              styles.micButton,
+              { backgroundColor: listening ? theme.colors.error : theme.colors.primary },
+              pressed && { opacity: 0.82, transform: [{ scale: 0.95 }] },
+            ]}
+          >
+            <MaterialCommunityIcons name={listening ? "microphone-off" : "microphone"} size={20} color="#FFFFFF" />
+          </Pressable>
           <Pressable
             onPress={() => setViewMode(viewMode === "list" ? "grid" : "list")}
             style={({ pressed }) => [
@@ -186,6 +266,51 @@ export default function SearchScreen() {
           </Text>
         </View>
       )}
+
+      <Modal visible={voiceOpen} transparent animationType="fade" onRequestClose={handleCloseVoice}>
+        <View style={styles.voiceBackdrop}>
+          <Surface style={[styles.voicePanel, { backgroundColor: theme.colors.surface }]} elevation={4}>
+            <Animated.View
+              style={[
+                styles.voiceOrb,
+                { backgroundColor: voiceError || !voiceSupported ? theme.colors.error : theme.colors.primary },
+                micAnimatedStyle,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name={voiceError || !voiceSupported ? "alert-circle" : "microphone"}
+                size={40}
+                color="#FFFFFF"
+              />
+            </Animated.View>
+
+            <Text variant="titleMedium" style={[styles.voiceTitle, { color: theme.colors.onSurface }]}>
+              {!voiceSupported ? "Voz no disponible" : voiceError ? "No pudimos escuchar" : listening ? "Escuchando..." : "Busqueda por voz"}
+            </Text>
+
+            <Text variant="bodyMedium" style={[styles.voiceText, { color: voiceError || !voiceSupported ? theme.colors.error : theme.colors.outline }]}>
+              {!voiceSupported
+                ? "Esta funcion requiere un build nativo de la app, no Expo Go."
+                : voiceError || transcript || "Deci el titulo, autor, ISBN o tema que queres buscar."}
+            </Text>
+
+            <View style={styles.voiceActions}>
+              <Button mode="text" onPress={handleCloseVoice}>
+                Cancelar
+              </Button>
+              {listening ? (
+                <Button mode="contained" icon="magnify" onPress={stopVoice}>
+                  Buscar
+                </Button>
+              ) : voiceError ? (
+                <Button mode="contained" icon="microphone" onPress={handleStartVoice}>
+                  Reintentar
+                </Button>
+              ) : null}
+            </View>
+          </Surface>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -219,6 +344,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.lg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   skeletonContainer: {
     paddingVertical: 8,
   },
@@ -240,5 +372,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: borderRadius.pill,
+  },
+  voiceBackdrop: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.58)",
+    paddingHorizontal: 24,
+  },
+  voicePanel: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: borderRadius.xxl,
+    padding: 24,
+    alignItems: "center",
+  },
+  voiceOrb: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  voiceTitle: {
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  voiceText: {
+    minHeight: 44,
+    textAlign: "center",
+    lineHeight: 21,
+  },
+  voiceActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 8,
+    alignSelf: "stretch",
+    marginTop: 22,
   },
 });

@@ -132,7 +132,7 @@ export interface SearchResult {
 
 export type RootStackParamList = {
   "(tabs)": undefined;
-  book/[id]: { id: number };
+  "book/[id]": { id: number };
   search: { query?: string };
   login: undefined;
   scanner: undefined;
