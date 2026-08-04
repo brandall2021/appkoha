@@ -16,6 +16,7 @@ Aplicacion movil de biblioteca universitaria integrada con Koha ILS (Integrated 
 ## Funcionalidades
 
 - Busqueda de libros por titulo, autor, ISBN
+- **Busqueda por voz** (micrófono con reconocimiento en tiempo real, transcripción en vivo)
 - Filtros por material (libros, revistas, tesis, digital, audiovisual)
 - Ficha de detalle con informacion bibliografica completa
 - Vista de ejemplares y disponibilidad
@@ -33,7 +34,7 @@ Aplicacion movil de biblioteca universitaria integrada con Koha ILS (Integrated 
 
 ### Requisitos
 
-- Node.js >= 18
+- Node.js >= 22
 - npm o yarn
 - Expo CLI (`npm install -g expo-cli`)
 - Android Studio (para emulador) o dispositivo con Expo Go
@@ -46,7 +47,7 @@ git clone https://github.com/brandall2021/appkoha.git
 cd appkoha
 
 # Instalar dependencias
-npm install
+npm install --legacy-peer-deps
 
 # Iniciar el servidor de desarrollo
 npm start
@@ -95,79 +96,31 @@ En la pestana **General**:
 | Base Directory | `/` |
 | Build Type | `Dockerfile` |
 
-### Paso 4: Crear el Dockerfile
+### Paso 4: Variables de Entorno (Opcional)
 
-Crea un archivo `Dockerfile` en la raiz del proyecto:
-
-```dockerfile
-# Build stage
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Instalar dependencias de sistema para native modules
-RUN apk add --no-cache python3 make g++
-
-# Copiar package files
-COPY package*.json ./
-
-# Instalar dependencias
-RUN npm ci
-
-# Copiar codigo fuente
-COPY . .
-
-# Build para web
-RUN npx expo export --platform web
-
-# Production stage
-FROM nginx:alpine
-
-# Copiar el build de Expo
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Configurar nginx para SPA
-RUN echo 'server { \
-    listen 80; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    location /static/ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### Paso 5: Configurar Variables de Entorno (Opcional)
-
-En Dokploy, ve a la pestana **Environment** y agrega si es necesario:
+En la pestana **Environment** agrega:
 
 ```
-EXPO_PUBLIC_API_URL=https://tu-api-koha.com
+DATABASE_URL=postgresql://user:pass@host:5432/db
+JWT_SECRET=tu-secreto-jwt
+KOHA_API_URL=https://tu-koha.com/api/v1
 ```
 
-### Paso 6: Configurar Puertos
+### Paso 5: Configurar Puertos
 
 En la pestana **Network**:
 
 | Campo | Valor |
 |-------|-------|
-| Ports | `80:3000` |
+| Ports | `80:80` |
 
-### Paso 7: Build y Despliegue
+### Paso 6: Build y Despliegue
 
 1. Click en **Deploy** en la pestana General
 2. Espera a que el build termine (ver logs en tiempo real)
 3. Una vez completado, Dokploy asignara una URL automatica
 
-### Paso 8: Configurar Dominio (Opcional)
+### Paso 7: Configurar Dominio (Opcional)
 
 En la pestana **Domains**:
 
@@ -175,6 +128,61 @@ En la pestana **Domains**:
 2. Ingresa tu dominio (ej: `app.tudominio.com`)
 3. Habilita **SSL** si esta disponible
 4. Apunta el DNS de tu dominio a la IP del servidor Dokploy
+
+---
+
+## Dockerfile (incluido en el repo)
+
+```dockerfile
+# Build stage
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+RUN npx expo export --platform web
+
+# Production stage
+FROM nginx:alpine
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### nginx.conf (SPA fallback para expo-router)
+
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_min_length 1000;
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+}
+```
 
 ---
 
@@ -208,29 +216,6 @@ eas build --platform android --profile production
 eas build --platform ios --profile production
 ```
 
-### Perfiles de Build (eas.json)
-
-```json
-{
-  "cli": {
-    "version": ">= 5.0.0"
-  },
-  "build": {
-    "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "production": {
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  }
-}
-```
-
 ---
 
 ## Estructura del Proyecto
@@ -257,8 +242,11 @@ appkoha/
 │   ├── stores/            # Zustand stores
 │   ├── theme/             # Tema y estilos
 │   ├── types/             # Tipos TypeScript
-│   └── utils/             # Utilidades y animaciones
+│   ├── utils/             # Utilidades y animaciones
+│   └── hooks/             # Custom hooks (useVoiceSearch)
 ├── Dockerfile             # Para Dokploy
+├── nginx.conf             # Config nginx SPA
+├── .dockerignore
 └── package.json
 ```
 
@@ -275,6 +263,9 @@ npx expo export --platform web
 
 # Build para Android
 npx expo export --platform android
+
+# Build Docker
+docker build -t appkoha-web .
 
 # Limpiar cache
 npx expo start --clear
@@ -306,7 +297,7 @@ La app se conecta a la API REST de Koha v25.05.
 
 1. Verifica los logs en Dokploy > Deployments
 2. Asegurate de que el Dockerfile este en la raiz
-3. Verifica que `npm install` funcione localmente
+3. Verifica que `npm install --legacy-peer-deps` funcione localmente
 
 ### App no conecta a Koha
 
@@ -317,7 +308,11 @@ La app se conecta a la API REST de Koha v25.05.
 ### Build web muestra 404
 
 1. Verifica que `npx expo export --platform web` funcione localmente
-2. Revisa la configuracion de nginx en el Dockerfile
+2. Revisa la configuracion de nginx (`try_files $uri $uri/ /index.html`)
+
+### Busqueda por voz no funciona en Expo Go
+
+`expo-speech-recognition` incluye codigo nativo y **no funciona en Expo Go**. Requiere build nativo (`npx expo run:android` / `npx expo run:ios`) o dev client (`expo start --dev-client`).
 
 ---
 
