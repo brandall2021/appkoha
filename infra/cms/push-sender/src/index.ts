@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerRoutes } from "./routes.js";
 import { createDirectusClient, type DirectusClient } from "./directus.js";
+import { enviarExpoReal, enviarWebReal, type SendDeps } from "./send.js";
 
 export interface AppConfig {
   sharedSecret: string;
@@ -10,7 +11,7 @@ export interface AppConfig {
   directusServiceToken?: string;
 }
 
-export function buildApp(cfg: AppConfig, directus?: DirectusClient): FastifyInstance {
+export function buildApp(cfg: AppConfig, directus?: DirectusClient, deps?: SendDeps): FastifyInstance {
   if (!cfg.sharedSecret) throw new Error("SHARED_SECRET es obligatorio");
   const dc =
     directus ??
@@ -18,7 +19,11 @@ export function buildApp(cfg: AppConfig, directus?: DirectusClient): FastifyInst
       cfg.directusUrl ?? process.env.DIRECTUS_URL ?? "",
       cfg.directusServiceToken ?? process.env.DIRECTUS_SERVICE_TOKEN ?? ""
     );
+  const resolvedDeps: SendDeps = deps ?? {
+    enviarExpo: enviarExpoReal,
+    enviarWeb: enviarWebReal(cfg.vapidPublicKey, cfg.vapidPrivateKey),
+  };
   const app = Fastify({ logger: false });
-  registerRoutes(app, cfg, dc);
+  registerRoutes(app, cfg, dc, resolvedDeps);
   return app;
 }
