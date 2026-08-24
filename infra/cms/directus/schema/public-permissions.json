@@ -1,0 +1,22 @@
+[
+  {
+    "collection": "noticias",
+    "action": "read",
+    "fields": [
+      "*"
+    ],
+    "permissions": {
+      "status": {
+        "_eq": "published"
+      }
+    }
+  },
+  {
+    "collection": "links_utiles",
+    "action": "read",
+    "fields": [
+      "*"
+    ],
+    "permissions": null
+  }
+]
