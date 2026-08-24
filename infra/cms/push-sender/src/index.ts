@@ -14,7 +14,10 @@ export function buildApp(cfg: AppConfig, directus?: DirectusClient): FastifyInst
   if (!cfg.sharedSecret) throw new Error("SHARED_SECRET es obligatorio");
   const dc =
     directus ??
-    createDirectusClient(cfg.directusUrl ?? "", cfg.directusServiceToken ?? "");
+    createDirectusClient(
+      cfg.directusUrl ?? process.env.DIRECTUS_URL ?? "",
+      cfg.directusServiceToken ?? process.env.DIRECTUS_SERVICE_TOKEN ?? ""
+    );
   const app = Fastify({ logger: false });
   registerRoutes(app, cfg, dc);
   return app;
