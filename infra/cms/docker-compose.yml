@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: directus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir en .env}
+      POSTGRES_DB: directus
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U directus"]
+      interval: 5s
+      retries: 10
+
+  directus:
+    image: directus/directus:11
+    ports:
+      - "8055:8055"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KEY: ${DIRECTUS_KEY:?definir en .env}
+      SECRET: ${DIRECTUS_SECRET:?definir en .env}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:-admin@institucion.edu.ar}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:?definir en .env}
+      DB_CLIENT: pg
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: directus
+      DB_USER: directus
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      CORS_ENABLED: "true"
+      CORS_ORIGIN: "true"
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8055}
+    volumes:
+      - uploads:/directus/uploads
+
+  push-sender:
+    build: ./push-sender
+    ports:
+      - "8056:8056"
+    depends_on:
+      - directus
+    environment:
+      SHARED_SECRET: ${PUSH_SHARED_SECRET:?definir en .env}
+      DIRECTUS_URL: http://directus:8055
+      DIRECTUS_SERVICE_TOKEN: ${DIRECTUS_SERVICE_TOKEN:?definir en .env}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      PORT: "8056"
+
+volumes:
+  pgdata:
+  uploads:
