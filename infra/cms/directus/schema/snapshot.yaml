@@ -408,7 +408,7 @@ fields:
       field: cuerpo
       group: null
       hidden: false
-      interface: input-rich-text-md
+      interface: input-rich-text-html
       note: null
       options:
         toolbar:
@@ -518,7 +518,7 @@ fields:
       name: fecha
       table: noticias
       data_type: timestamp with time zone
-      default_value: now()
+      default_value: CURRENT_TIMESTAMP
       max_length: null
       numeric_precision: null
       numeric_scale: null
@@ -729,7 +729,7 @@ fields:
       name: creado
       table: push_tokens
       data_type: timestamp with time zone
-      default_value: now()
+      default_value: CURRENT_TIMESTAMP
       max_length: null
       numeric_precision: null
       numeric_scale: null
