@@ -1,12 +1,13 @@
 import React from "react";
 import { ScrollView, RefreshControl, View } from "react-native";
-import { Card, Text, ActivityIndicator, Button } from "react-native-paper";
+import { Card, Text, Button } from "react-native-paper";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { fetchNoticias, fetchLinks } from "../../api/cms";
 import { leerLinksCache } from "./links-cache";
 import { LinksUtiles } from "./links-utiles";
+import { NovedadesSkeleton } from "./novedades-skeleton";
 import { stripHtml } from "./strip-html";
 
 function cmsUrl(): string {
@@ -33,7 +34,7 @@ export function NovedadesScreen() {
     },
   });
 
-  if (noticias.isLoading) return <ActivityIndicator style={{ marginTop: 48 }} />;
+  if (noticias.isLoading) return <NovedadesSkeleton />;
 
   if (noticias.isError) {
     return (
