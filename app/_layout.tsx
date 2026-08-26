@@ -5,12 +5,15 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppStore, loadPersistedState } from "../src/stores/appStore";
 import { lightTheme, darkTheme } from "../src/theme";
+import { usePushRegistration } from "../src/hooks/usePushRegistration";
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const { isDarkMode } = useAppStore();
   const theme = isDarkMode ? darkTheme : lightTheme;
+
+  usePushRegistration();
 
   useEffect(() => {
     loadPersistedState();
