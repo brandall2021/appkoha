@@ -1,5 +1,6 @@
 {
   "expo": {
+    "_task10_note": "ANTES de deploy a producción: correr 'npx eas init' (requiere login Expo) y pegar el projectId en extra.eas.projectId más abajo.",
     "name": "KohaLibrary",
     "slug": "appkoha",
     "version": "1.0.0",
@@ -20,6 +21,11 @@
       },
       "package": "com.kohalibrary.app",
       "predictiveBackGestureEnabled": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "COMPLETAR_CON_npx_eas_init"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png",

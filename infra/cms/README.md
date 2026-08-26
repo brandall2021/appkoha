@@ -1,5 +1,9 @@
 # Stack local CMS + Push
 
+> **Deploy a producción (pendiente):**
+> - **EAS projectId:** correr `npx eas init` (requiere login Expo) y pegar el resultado en `app.json → extra.eas.projectId`. No hay projectId inventado — es manual.
+> - **URLs de institución:** los links seed de `apply.sh` usan URLs de ejemplo (`autogestion.institucion.edu.ar`). Actualizar antes de deploy real.
+
 Levanta Directus 11 (panel en `http://localhost:8055`), PostgreSQL 16 interno y el push-sender (`:8056`).
 
 ## Uso
