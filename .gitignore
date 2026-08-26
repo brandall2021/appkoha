@@ -9,3 +9,5 @@ web-build/
 .env
 .env.local
 infra/cms/.env
+/backend/vendor
+/database/database.sqlite
