@@ -59,6 +59,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="novedades"
+        options={{
+          title: "Novedades",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="bell-ring" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Cuenta",
