@@ -74,6 +74,13 @@ export default function RootLayout() {
               title: "Buscar",
             }}
           />
+          <Stack.Screen
+            name="correlatividades"
+            options={{
+              headerShown: true,
+              title: "Correlatividades",
+            }}
+          />
         </Stack>
       </PaperProvider>
     </QueryClientProvider>

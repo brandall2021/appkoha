@@ -1,6 +1,6 @@
 import React from "react";
-import LoginScreen from "../src/screens/auth/LoginScreen";
+import PortalLoginScreen from "../src/screens/portal/PortalLoginScreen";
 
 export default function LoginRoute() {
-  return <LoginScreen />;
+  return <PortalLoginScreen />;
 }

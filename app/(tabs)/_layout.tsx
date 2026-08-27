@@ -1,10 +1,20 @@
-import React from "react";
-import { Tabs } from "expo-router";
+import React, { useEffect } from "react";
+import { Tabs, Redirect } from "expo-router";
 import { useTheme } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAuthStore } from "../../src/stores/authStore";
 
 export default function TabLayout() {
   const theme = useTheme();
+  const { token, isLoading, loadToken } = useAuthStore();
+
+  useEffect(() => {
+    loadToken();
+  }, [loadToken]);
+
+  if (!isLoading && !token) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <Tabs
@@ -32,6 +42,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="horarios"
+        options={{
+          title: "Horarios",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="calendar-clock" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="search"
         options={{
           title: "Buscar",
@@ -46,15 +65,6 @@ export default function TabLayout() {
           title: "Favoritos",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="heart" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="loans"
-        options={{
-          title: "Prestamos",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="book-multiple" size={size} color={color} />
           ),
         }}
       />
