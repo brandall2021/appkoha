@@ -31,4 +31,18 @@ interface GuaraniProvider
      * ¿El estudiante está regular (al día en cuotas y sin deudas)?
      */
     public function isEnrollmentCurrent(int $padron): bool;
+
+    /**
+     * Materias del plan de estudios del estudiante con correlatividades.
+     *
+     * @return list<array{materia_codigo: string, materia_nombre: string, correlativas: list<string>}>
+     */
+    public function getSubjects(int $padron): array;
+
+    /**
+     * Correlatividades del estudiante con estado visual.
+     *
+     * @return list<array{materia_codigo: string, materia_nombre: string, correlativas: list<string>, aprobada: bool, habilitada: bool}>
+     */
+    public function getCorrelativities(int $padron): array;
 }

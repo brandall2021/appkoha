@@ -67,6 +67,34 @@ class MockGuaraniProvider implements GuaraniProvider
         10003 => true,
     ];
 
+    private const SUBJECTS = [
+        10001 => [
+            ['materia_codigo' => 'ADM101', 'materia_nombre' => 'Introducción a la Administración', 'correlativas' => []],
+            ['materia_codigo' => 'ADM102', 'materia_nombre' => 'Contabilidad I',                 'correlativas' => ['ADM101']],
+            ['materia_codigo' => 'DER101', 'materia_nombre' => 'Derecho Empresarial',            'correlativas' => []],
+            ['materia_codigo' => 'ECO101', 'materia_nombre' => 'Economía General',               'correlativas' => []],
+            ['materia_codigo' => 'MAT101', 'materia_nombre' => 'Matemática Aplicada',            'correlativas' => []],
+            ['materia_codigo' => 'EST101', 'materia_nombre' => 'Estadística',                     'correlativas' => ['MAT101']],
+            ['materia_codigo' => 'ADM201', 'materia_nombre' => 'Administración General',         'correlativas' => ['ADM101', 'ECO101']],
+            ['materia_codigo' => 'CON201', 'materia_nombre' => 'Contabilidad II',                 'correlativas' => ['ADM102']],
+        ],
+        10002 => [
+            ['materia_codigo' => 'CON201', 'materia_nombre' => 'Contabilidad II',                 'correlativas' => ['ADM102']],
+            ['materia_codigo' => 'CON202', 'materia_nombre' => 'Costos y Presupuestos',           'correlativas' => ['CON201']],
+            ['materia_codigo' => 'FIS201', 'materia_nombre' => 'Finanzas Públicas',               'correlativas' => ['CON201']],
+            ['materia_codigo' => 'DER201', 'materia_nombre' => 'Derecho Tributario',              'correlativas' => ['DER101']],
+            ['materia_codigo' => 'AUD201', 'materia_nombre' => 'Auditoría',                       'correlativas' => ['CON201', 'CON202']],
+            ['materia_codigo' => 'MAT201', 'materia_nombre' => 'Matemática Financiera',           'correlativas' => ['MAT101']],
+        ],
+        10003 => [
+            ['materia_codigo' => 'ADM101', 'materia_nombre' => 'Introducción a la Administración', 'correlativas' => []],
+            ['materia_codigo' => 'DER101', 'materia_nombre' => 'Derecho Empresarial',             'correlativas' => []],
+            ['materia_codigo' => 'ECO101', 'materia_nombre' => 'Economía General',                'correlativas' => []],
+            ['materia_codigo' => 'MAT101', 'materia_nombre' => 'Matemática Aplicada',             'correlativas' => []],
+            ['materia_codigo' => 'ADM102', 'materia_nombre' => 'Contabilidad I',                  'correlativas' => ['ADM101']],
+        ],
+    ];
+
     public function findStudentByPadron(int $padron): array
     {
         if (! isset(self::STUDENTS[$padron])) {
@@ -95,5 +123,36 @@ class MockGuaraniProvider implements GuaraniProvider
         $this->findStudentByPadron($padron);
 
         return self::ENROLLMENT_STATUS[$padron] ?? false;
+    }
+
+    public function getSubjects(int $padron): array
+    {
+        $this->findStudentByPadron($padron);
+
+        return self::SUBJECTS[$padron] ?? [];
+    }
+
+    public function getCorrelativities(int $padron): array
+    {
+        $this->findStudentByPadron($padron);
+
+        $subjects = self::SUBJECTS[$padron] ?? [];
+        $approved = array_column($this->getGrades($padron), 'materia_codigo');
+
+        return array_map(function (array $subject) use ($approved): array {
+            $correlativas = $subject['correlativas'];
+            $aprobada = in_array($subject['materia_codigo'], $approved, true);
+            $habilitada = empty($correlativas) || array_reduce($correlativas, function (bool $carry, string $code) use ($approved): bool {
+                return $carry && in_array($code, $approved, true);
+            }, true);
+
+            return [
+                'materia_codigo'  => $subject['materia_codigo'],
+                'materia_nombre'  => $subject['materia_nombre'],
+                'correlativas'    => $correlativas,
+                'aprobada'        => $aprobada,
+                'habilitada'      => $habilitada,
+            ];
+        }, $subjects);
     }
 }
