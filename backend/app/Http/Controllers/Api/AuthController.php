@@ -67,6 +67,6 @@ class AuthController
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        return response()->json(["data" => $request->user()]);
     }
 }
