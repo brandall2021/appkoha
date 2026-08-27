@@ -23,6 +23,11 @@ class SubjectSeeder extends Seeder
             ['code' => 'ADM201', 'name' => 'Administración General',         'career_id' => $admCareer->id, 'year' => 2, 'semester' => 1, 'created_at' => now(), 'updated_at' => now()],
             // Carrera: Contador Público
             ['code' => 'CON201', 'name' => 'Contabilidad II',                 'career_id' => $conCareer->id, 'year' => 2, 'semester' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'CON202', 'name' => 'Costos y Presupuestos',           'career_id' => $conCareer->id, 'year' => 2, 'semester' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'FIS201', 'name' => 'Finanzas Públicas',               'career_id' => $conCareer->id, 'year' => 2, 'semester' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'DER201', 'name' => 'Derecho Tributario',              'career_id' => $conCareer->id, 'year' => 2, 'semester' => 2, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'AUD201', 'name' => 'Auditoría',                       'career_id' => $conCareer->id, 'year' => 2, 'semester' => 2, 'created_at' => now(), 'updated_at' => now()],
+            ['code' => 'MAT201', 'name' => 'Matemática Financiera',           'career_id' => $conCareer->id, 'year' => 2, 'semester' => 2, 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 }

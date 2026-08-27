@@ -14,6 +14,14 @@ class CorrelativitySeeder extends Seeder
             ['subject' => 'ADM102', 'required' => 'ADM101'],
             ['subject' => 'EST101', 'required' => 'MAT101'],
             ['subject' => 'ADM201', 'required' => 'ADM101'],
+            ['subject' => 'ADM201', 'required' => 'ECO101'],
+            ['subject' => 'CON201', 'required' => 'ADM102'],
+            ['subject' => 'CON202', 'required' => 'CON201'],
+            ['subject' => 'FIS201', 'required' => 'CON201'],
+            ['subject' => 'DER201', 'required' => 'DER101'],
+            ['subject' => 'AUD201', 'required' => 'CON201'],
+            ['subject' => 'AUD201', 'required' => 'CON202'],
+            ['subject' => 'MAT201', 'required' => 'MAT101'],
         ];
 
         foreach ($pairs as $pair) {
