@@ -9,6 +9,9 @@ RUN npm ci --legacy-peer-deps
 
 # Copy source and build
 COPY . .
+# Inyecta la URL del API en build-time para el bundle web de Expo
+ARG EXPO_PUBLIC_API_URL
+ENV EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL
 RUN npx expo export --platform web
 
 # Production stage
