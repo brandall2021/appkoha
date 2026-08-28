@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GuaraniController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\LinksUtilesController;
 use App\Http\Controllers\Api\NewsController;
 use Illuminate\Support\Facades\Route;
 
@@ -10,6 +11,7 @@ Route::get('/v1/health', HealthController::class)->withoutMiddleware('auth:sanct
 
 Route::get('/v1/news', [NewsController::class, 'index'])->withoutMiddleware('auth:sanctum');
 Route::get('/v1/news/{id}', [NewsController::class, 'show'])->withoutMiddleware('auth:sanctum');
+Route::get('/v1/links', [LinksUtilesController::class, 'index'])->withoutMiddleware('auth:sanctum');
 
 Route::post('/v1/auth/register', [AuthController::class, 'register'])->withoutMiddleware('auth:sanctum');
 Route::post('/v1/auth/login', [AuthController::class, 'login'])->withoutMiddleware('auth:sanctum');

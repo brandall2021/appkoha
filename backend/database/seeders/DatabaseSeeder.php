@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             ScheduleSeeder::class,
             CorrelativitySeeder::class,
             NewsSeeder::class,
+            LinksUtilesSeeder::class,
         ]);
     }
 }
