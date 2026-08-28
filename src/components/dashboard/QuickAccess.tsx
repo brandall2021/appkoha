@@ -13,10 +13,10 @@ interface QuickAccessItem {
 }
 
 const ITEMS: QuickAccessItem[] = [
-  { icon: "calendar-clock", label: "Horarios", route: "/horarios", color: "#1B5E20" },
+  { icon: "school", label: "Guaraní", route: "/guarani", color: "#1B5E20" },
   { icon: "magnify", label: "Buscar", route: "/search", color: "#00695C" },
   { icon: "newspaper-variant-outline", label: "Novedades", route: "/novedades", color: "#E65100" },
-  { icon: "bookshelf", label: "Catalogo", route: "/search", color: "#7B1FA2" },
+  { icon: "link-variant", label: "Links Utiles", route: "/links-utiles", color: "#7B1FA2" },
 ];
 
 export default function QuickAccess() {

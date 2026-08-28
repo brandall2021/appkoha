@@ -78,6 +78,22 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="guarani"
+        options={{
+          title: "Guaraní",
+          headerTitle: "Acceso Guaraní",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="links-utiles"
+        options={{
+          title: "Links Utiles",
+          headerTitle: "Links Utiles",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Cuenta",
